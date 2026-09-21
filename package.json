@@ -1,0 +1,17 @@
+{
+  "name": "profitrank-gcheck",
+  "version": "1.0.0",
+  "description": "Gamified Profit & Goal Tracker connected to Vercel Blob Storage",
+  "type": "module",
+  "main": "api/state.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static app ready for deployment'"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.1"
+  },
+  "keywords": ["profit", "tracker", "gamification", "vercel-blob", "storage"],
+  "author": "",
+  "license": "MIT"
+}

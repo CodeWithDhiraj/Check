@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProfitRank | Gamified Profit & Goal Tracker</title>
+  <meta name="description" content="Track your financial profits across Bronze, Silver, Gold, Diamond, and Ace tiers to conquer your ultimate $10,000 goal.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Canvas for celebratory confetti effects -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Ambient Glow Backgrounds -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <div class="app-wrapper">
+    <!-- Main Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-box">
+          <div class="logo-icon">🎯</div>
+          <div class="logo-text">
+            <h1 class="logo-title">ProfitRank</h1>
+            <span class="logo-subtitle">S1 • Goal to Ace (10,000)</span>
+          </div>
+        </div>
+        <div id="current-tier-pill" class="tier-badge-pill tier-bronze">
+          <span class="tier-pill-icon">🥉</span>
+          <span id="current-tier-name" class="tier-pill-name">Bronze Tier</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Cloud Storage Sync Indicator Pill -->
+        <div id="cloud-sync-pill" class="cloud-sync-pill" role="status" aria-live="polite" title="Checking Vercel Blob status...">
+          <span id="cloud-sync-dot" class="sync-dot sync-loading"></span>
+          <span id="cloud-sync-text" class="sync-label">Cloud Connecting...</span>
+        </div>
+
+        <!-- Currency Selector -->
+        <div class="currency-selector-wrapper">
+          <label for="currency-select" class="sr-only">Currency</label>
+          <select id="currency-select" class="custom-select" title="Change currency">
+            <option value="$" selected>$ (USD)</option>
+            <option value="₹">₹ (INR)</option>
+            <option value="€">€ (EUR)</option>
+            <option value="£">£ (GBP)</option>
+            <option value="A$">A$ (AUD)</option>
+            <option value="¥">¥ (JPY)</option>
+          </select>
+        </div>
+
+        <button id="sound-toggle-btn" class="icon-action-btn" title="Toggle Sound Feedback">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <button id="history-toggle-btn" class="icon-action-btn" title="Profit Log History">
+          <span>📜</span>
+          <span class="btn-label">Ledger</span>
+          <span id="ledger-badge-count" class="badge-count">0</span>
+        </button>
+
+        <button id="settings-toggle-btn" class="icon-action-btn" title="Settings & Backup">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Master Progress & Hero Overview -->
+    <section class="hero-dashboard">
+      <div class="hero-stats-grid">
+        <!-- Main Profit Metric Card -->
+        <div class="stat-card glass-card hero-metric-card">
+          <div class="stat-card-header">
+            <span class="stat-tag">TOTAL REALIZED PROFIT</span>
+            <button id="quick-edit-profit-btn" class="mini-text-btn" title="Edit total profit manually">Edit Total</button>
+          </div>
+          <div class="main-profit-display">
+            <span class="currency-sym">$</span>
+            <span id="total-profit-num" class="profit-amount">0</span>
+          </div>
+          <div class="profit-subtext">
+            <span id="goal-difference-text">Need <strong id="remaining-to-goal">$10,000</strong> to reach Ace (10K)</span>
+          </div>
+        </div>
+
+        <!-- Tier Journey Progress Ring & Summary -->
+        <div class="stat-card glass-card hero-journey-card">
+          <div class="journey-info">
+            <span class="stat-tag">CURRENT JOURNEY</span>
+            <h2 id="journey-status-title" class="journey-title">Bronze Trainee</h2>
+            <div class="journey-next-step" id="next-milestone-info">
+              Next milestone: <span id="next-milestone-val" class="highlight-val">$50</span>
+            </div>
+            <!-- Multi-tier mini indicator dots -->
+            <div class="tier-dots-stepper">
+              <span class="tier-dot active" data-tier="bronze" title="Bronze (1K)">🥉</span>
+              <span class="tier-dot-line"></span>
+              <span class="tier-dot" data-tier="silver" title="Silver (2K)">🥈</span>
+              <span class="tier-dot-line"></span>
+              <span class="tier-dot" data-tier="gold" title="Gold (5K)">🥇</span>
+              <span class="tier-dot-line"></span>
+              <span class="tier-dot" data-tier="diamond" title="Diamond (8K)">💎</span>
+              <span class="tier-dot-line"></span>
+              <span class="tier-dot" data-tier="ace" title="Ace (10K)">👑</span>
+            </div>
+          </div>
+
+          <div class="progress-ring-container">
+            <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+              <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+              <circle id="master-progress-circle" class="progress-ring__circle" stroke="url(#ringGradient)" stroke-width="8" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50"/>
+              <defs>
+                <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#38bdf8"/>
+                  <stop offset="50%" stop-color="#818cf8"/>
+                  <stop offset="100%" stop-color="#f59e0b"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="progress-ring-center">
+              <span id="overall-percentage" class="percentage-val">0%</span>
+              <span class="percentage-sub">of 10K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Log Form -->
+        <div class="stat-card glass-card hero-log-card">
+          <div class="stat-card-header">
+            <span class="stat-tag">LOG PROFIT</span>
+            <span class="mode-indicator" id="sync-mode-tag">⚡ Auto-checks milestones</span>
+          </div>
+          <form id="quick-log-form" class="quick-log-form">
+            <div class="input-with-symbol">
+              <span class="currency-sym input-sym">$</span>
+              <input type="number" id="log-profit-input" placeholder="0.00" step="any" required min="0.01">
+            </div>
+            <div class="form-row-notes">
+              <input type="text" id="log-note-input" placeholder="Note (e.g. BTC Long, Client payment, AAPL trade)" maxlength="40">
+              <button type="submit" id="log-profit-submit-btn" class="primary-btn">
+                <span>+ Add Profit</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Linear Tier Roadmap Track -->
+      <div class="tier-track-wrapper glass-card">
+        <div class="tier-track-header">
+          <span class="track-label">ROADMAP TRACKER</span>
+          <span id="completed-checkpoints-count" class="track-stats">0 / 25 Checkpoints Reached</span>
+        </div>
+        <div class="master-progress-bar-bg">
+          <div id="master-progress-bar-fill" class="master-progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="roadmap-ticks">
+          <div class="tick-item" style="left: 0%;"><span>0</span></div>
+          <div class="tick-item" style="left: 10%;"><span>1K (Bronze)</span></div>
+          <div class="tick-item" style="left: 20%;"><span>2K (Silver)</span></div>
+          <div class="tick-item" style="left: 50%;"><span>5K (Gold)</span></div>
+          <div class="tick-item" style="left: 80%;"><span>8K (Diamond)</span></div>
+          <div class="tick-item" style="left: 100%;"><span>10K (Ace 👑)</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Tier Milestone Board (5 Columns matching hand-drawn paper sketch) -->
+    <main class="milestone-board">
+      <div class="board-header">
+        <div class="board-title-group">
+          <h2 class="board-title">Tier Checkpoints</h2>
+          <p class="board-subtitle">Click any checkbox to mark milestone reached, or log profits above to auto-advance!</p>
+        </div>
+        <div class="board-actions">
+          <button id="customize-milestones-btn" class="secondary-btn btn-sm">
+            <span>✏️ Edit Milestone Targets</span>
+          </button>
+          <button id="reset-all-btn" class="danger-outline-btn btn-sm">
+            <span>↺ Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5 Tier Columns -->
+      <div class="tiers-grid">
+        <!-- 1. BRONZE TIER (50, 100, 250, 500, 800, 1000) -->
+        <section class="tier-column tier-bronze glass-card" id="tier-col-bronze" data-tier="bronze">
+          <div class="tier-col-header">
+            <div class="tier-badge-icon">🥉</div>
+            <div class="tier-header-info">
+              <h3 class="tier-name">Bronze</h3>
+              <span class="tier-target-range">0 → <span class="currency-sym">$</span>1,000</span>
+            </div>
+            <div class="tier-status-indicator" id="tier-badge-status-bronze">Active</div>
+          </div>
+          <div class="tier-col-progress">
+            <div class="tier-progress-bar-bg">
+              <div class="tier-progress-fill" id="tier-progress-bronze" style="width: 0%;"></div>
+            </div>
+            <span class="tier-progress-text" id="tier-count-bronze">0/6</span>
+          </div>
+
+          <div class="milestones-list" id="milestones-list-bronze">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+
+        <!-- 2. SILVER TIER (1200, 1400, 1600, 1800, 2000) -->
+        <section class="tier-column tier-silver glass-card" id="tier-col-silver" data-tier="silver">
+          <div class="tier-col-header">
+            <div class="tier-badge-icon">🥈</div>
+            <div class="tier-header-info">
+              <h3 class="tier-name">Silver</h3>
+              <span class="tier-target-range"><span class="currency-sym">$</span>1,000 → <span class="currency-sym">$</span>2,000</span>
+            </div>
+            <div class="tier-status-indicator" id="tier-badge-status-silver">Locked</div>
+          </div>
+          <div class="tier-col-progress">
+            <div class="tier-progress-bar-bg">
+              <div class="tier-progress-fill" id="tier-progress-silver" style="width: 0%;"></div>
+            </div>
+            <span class="tier-progress-text" id="tier-count-silver">0/5</span>
+          </div>
+
+          <div class="milestones-list" id="milestones-list-silver">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+
+        <!-- 3. GOLD TIER (2600, 3200, 3800, 4400, 5000) -->
+        <section class="tier-column tier-gold glass-card" id="tier-col-gold" data-tier="gold">
+          <div class="tier-col-header">
+            <div class="tier-badge-icon">🥇</div>
+            <div class="tier-header-info">
+              <h3 class="tier-name">Gold</h3>
+              <span class="tier-target-range"><span class="currency-sym">$</span>2,000 → <span class="currency-sym">$</span>5,000</span>
+            </div>
+            <div class="tier-status-indicator" id="tier-badge-status-gold">Locked</div>
+          </div>
+          <div class="tier-col-progress">
+            <div class="tier-progress-bar-bg">
+              <div class="tier-progress-fill" id="tier-progress-gold" style="width: 0%;"></div>
+            </div>
+            <span class="tier-progress-text" id="tier-count-gold">0/5</span>
+          </div>
+
+          <div class="milestones-list" id="milestones-list-gold">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+
+        <!-- 4. DIAMOND TIER (5600, 6200, 6800, 7400, 8000) -->
+        <section class="tier-column tier-diamond glass-card" id="tier-col-diamond" data-tier="diamond">
+          <div class="tier-col-header">
+            <div class="tier-badge-icon">💎</div>
+            <div class="tier-header-info">
+              <h3 class="tier-name">Diamond</h3>
+              <span class="tier-target-range"><span class="currency-sym">$</span>5,000 → <span class="currency-sym">$</span>8,000</span>
+            </div>
+            <div class="tier-status-indicator" id="tier-badge-status-diamond">Locked</div>
+          </div>
+          <div class="tier-col-progress">
+            <div class="tier-progress-bar-bg">
+              <div class="tier-progress-fill" id="tier-progress-diamond" style="width: 0%;"></div>
+            </div>
+            <span class="tier-progress-text" id="tier-count-diamond">0/5</span>
+          </div>
+
+          <div class="milestones-list" id="milestones-list-diamond">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+
+        <!-- 5. ACE TIER (8500, 9000, 9500, 10000) -->
+        <section class="tier-column tier-ace glass-card" id="tier-col-ace" data-tier="ace">
+          <div class="tier-col-header">
+            <div class="tier-badge-icon">👑</div>
+            <div class="tier-header-info">
+              <h3 class="tier-name">Ace</h3>
+              <span class="tier-target-range"><span class="currency-sym">$</span>8,000 → <span class="currency-sym">$</span>10,000</span>
+            </div>
+            <div class="tier-status-indicator" id="tier-badge-status-ace">Goal</div>
+          </div>
+          <div class="tier-col-progress">
+            <div class="tier-progress-bar-bg">
+              <div class="tier-progress-fill" id="tier-progress-ace" style="width: 0%;"></div>
+            </div>
+            <span class="tier-progress-text" id="tier-count-ace">0/4</span>
+          </div>
+
+          <div class="milestones-list" id="milestones-list-ace">
+            <!-- Rendered by app.js -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>ProfitRank Goal Tracker • Built for Traders, Investors & Goal Achievers • Persistent in LocalStorage</p>
+    </footer>
+  </div>
+
+  <!-- MODAL: Profit History & Ledger Drawer -->
+  <div id="history-modal" class="modal-backdrop">
+    <div class="modal-dialog glass-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">📜</span>
+          <h3>Profit Ledger & History</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="history-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ledger-summary-row">
+          <div class="ledger-summary-item">
+            <span class="label">Total Entries</span>
+            <span id="ledger-total-entries" class="val">0</span>
+          </div>
+          <div class="ledger-summary-item">
+            <span class="label">Accumulated Sum</span>
+            <span id="ledger-total-sum" class="val">$0</span>
+          </div>
+        </div>
+        <div class="ledger-list-wrapper">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Note</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+          <div id="ledger-empty-state" class="empty-state">
+            <p>No profit entries logged yet. Add your first profit entry above!</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="danger-outline-btn btn-sm" id="clear-ledger-btn">Clear All Entries</button>
+        <button class="secondary-btn btn-sm" data-close-modal="history-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Manual Profit Override -->
+  <div id="edit-profit-modal" class="modal-backdrop">
+    <div class="modal-dialog glass-card modal-sm">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">💰</span>
+          <h3>Set Total Profit</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="edit-profit-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Directly adjust your total profit. All milestones and tier ranks will automatically sync.</p>
+        <div class="input-with-symbol modal-input">
+          <span class="currency-sym input-sym">$</span>
+          <input type="number" id="manual-profit-input" step="any" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-btn" data-close-modal="edit-profit-modal">Cancel</button>
+        <button class="primary-btn" id="save-manual-profit-btn">Update Total</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Customize Milestone Values -->
+  <div id="customize-milestones-modal" class="modal-backdrop">
+    <div class="modal-dialog glass-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">✏️</span>
+          <h3>Customize Milestones</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="customize-milestones-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Adjust the target profit amount for any checkpoint in your roadmap.</p>
+        <div id="customize-inputs-container" class="customize-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="danger-outline-btn btn-sm" id="restore-default-milestones-btn">Restore Defaults</button>
+        <button class="secondary-btn" data-close-modal="customize-milestones-modal">Cancel</button>
+        <button class="primary-btn" id="save-custom-milestones-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Settings & Backup (Export / Import) -->
+  <div id="settings-modal" class="modal-backdrop">
+    <div class="modal-dialog glass-card modal-md">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="modal-icon">⚙️</span>
+          <h3>Settings & Data Backup</h3>
+        </div>
+        <button class="modal-close-btn" data-close-modal="settings-modal">✕</button>
+      </div>
+      <div class="modal-body settings-body">
+        <!-- Vercel Blob Cloud Storage -->
+        <div class="setting-group cloud-storage-group">
+          <div class="setting-group-header">
+            <h4>☁️ Vercel Blob Storage</h4>
+            <span id="settings-cloud-badge" class="badge-status">Checking...</span>
+          </div>
+          <p class="setting-subtext">Your profit history, milestones, and tiers are synchronized directly to your cloud container.</p>
+          <div class="cloud-info-box">
+            <div class="cloud-info-row">
+              <span class="info-label">Cloud Target:</span>
+              <span class="info-value">profit-rank-data.json</span>
+            </div>
+            <div class="cloud-info-row">
+              <span class="info-label">Sync Status:</span>
+              <span id="cloud-info-status" class="info-value">Connecting...</span>
+            </div>
+            <div class="cloud-info-row">
+              <span class="info-label">Last Cloud Sync:</span>
+              <span id="cloud-info-time" class="info-value">Never</span>
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="cloud-sync-now-btn" class="secondary-btn btn-sm">🔄 Save to Cloud Now</button>
+            <button id="cloud-pull-btn" class="secondary-btn btn-sm">📥 Reload from Cloud</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h4>Data Management</h4>
+          <p class="setting-subtext">Save a backup file of all your profits, checkpoints, and customized tiers.</p>
+          <div class="button-row">
+            <button id="export-data-btn" class="secondary-btn">📥 Export Backup (JSON)</button>
+            <label for="import-data-file" class="secondary-btn cursor-pointer">
+              📤 Import Backup
+              <input type="file" id="import-data-file" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+        
+        <div class="setting-group">
+          <h4>Goal Preferences</h4>
+          <div class="setting-inline">
+            <label for="sync-mode-toggle">Auto-check lower milestones when profit increases</label>
+            <input type="checkbox" id="sync-mode-toggle" checked class="custom-toggle">
+          </div>
+        </div>
+
+        <div class="danger-zone setting-group">
+          <h4>Danger Zone</h4>
+          <p class="setting-subtext">Completely erase all logged profits and reset all checkboxes to zero.</p>
+          <button id="hard-reset-btn" class="danger-btn">🗑️ Erase All Data & Reset</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary-btn" data-close-modal="settings-modal">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CELEBRATION MODAL: Rank Up / Goal Achieved -->
+  <div id="celebration-modal" class="modal-backdrop">
+    <div class="modal-dialog glass-card celebration-dialog">
+      <div class="celebration-content">
+        <div class="celebration-badge-large" id="celebration-badge">👑</div>
+        <span class="celebration-tag" id="celebration-tag">RANK PROMOTION!</span>
+        <h2 class="celebration-title" id="celebration-title">You've Reached Ace Rank!</h2>
+        <p class="celebration-desc" id="celebration-desc">Outstanding dedication! You conquered your $10,000 profit goal!</p>
+        
+        <div class="celebration-stats-pill">
+          <span>Total Profit: </span>
+          <strong id="celebration-profit-val">$10,000</strong>
+        </div>
+
+        <button class="primary-btn celebration-action-btn" data-close-modal="celebration-modal">
+          Claim Victory & Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
